@@ -4,9 +4,11 @@ from passlib.context import CryptContext
 import jwt
 import os
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-very-secret-key-for-development-only")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY environment variable must be set")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 Day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

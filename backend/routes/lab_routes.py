@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from typing import List
 from bson import ObjectId
 from enums import UserRole, RecordStatus, ScanType
 from database import scans_collection, scan_requests_collection
 from dependencies import get_current_user, require_role
-import shutil
+import aiofiles
 import os
+import uuid
 from datetime import datetime
 
 from utils import generate_display_id
@@ -15,13 +16,25 @@ router = APIRouter(prefix="/api/labs", tags=["Lab Technician"])
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+ALLOWED_MIME_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/dicom"}
+
 @router.post("/upload_scan")
-async def upload_patient_scan(patient_id: str, scan_type: ScanType, file: UploadFile = File(...), current_user: dict = Depends(require_role([UserRole.LAB_TECH]))):
+async def upload_patient_scan(request: Request, patient_id: str, scan_type: ScanType, file: UploadFile = File(...), current_user: dict = Depends(require_role([UserRole.LAB_TECH]))):
     """Lab Tech uploads an MRI or Lab Report for a patient."""
-    file_location = f"{UPLOAD_DIR}/{patient_id}_{file.filename}"
-    
-    with open(file_location, "wb+") as file_object:
-        shutil.copyfileobj(file.file, file_object)
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=415, detail="Unsupported file type. Allowed: PDF, JPEG, PNG, DICOM")
+
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File exceeds 10 MB limit")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+    file_location = os.path.join(UPLOAD_DIR, safe_filename)
+
+    async with aiofiles.open(file_location, "wb") as file_object:
+        await file_object.write(contents)
         
     scan_record = {
         "lab_tech_id": current_user["id"],

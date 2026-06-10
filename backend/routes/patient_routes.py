@@ -101,13 +101,14 @@ async def get_patient_records(current_user: dict = Depends(require_role([UserRol
 async def get_medicine_info(query: str):
     """Proxy to OpenFDA API to get information about a medicine."""
     import httpx
-    url = f"https://api.fda.gov/drug/label.json?search=openfda.brand_name:{query}&limit=1"
+    from urllib.parse import quote
+    safe_query = quote(query, safe="")
+    url = f"https://api.fda.gov/drug/label.json?search=openfda.brand_name:{safe_query}&limit=1"
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             response = await client.get(url)
             if response.status_code != 200:
-                # Try generic name fallback
-                url2 = f"https://api.fda.gov/drug/label.json?search=openfda.generic_name:{query}&limit=1"
+                url2 = f"https://api.fda.gov/drug/label.json?search=openfda.generic_name:{safe_query}&limit=1"
                 response = await client.get(url2)
                 if response.status_code != 200:
                     return {"name": query, "error": "Medicine details not found. Please verify the brand name (e.g. Advil, Tylenol)."}

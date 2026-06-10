@@ -1,15 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import os
 
 from routes import auth_routes, hospital_routes, pharma_routes, doctor_routes, lab_routes, patient_routes, admin_routes
 
 app = FastAPI(title="Medical Website API", version="1.0.0", description="Multi-tenant RBAC Medical Platform")
 
-# Configure CORS for multi-tenant frontend
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Expandable for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

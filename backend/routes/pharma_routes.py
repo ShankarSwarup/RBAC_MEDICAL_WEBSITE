@@ -5,7 +5,7 @@ from models import MedicineCreate
 from enums import UserRole, RecordStatus
 from database import inventory_collection, invoices_collection, records_collection
 from dependencies import get_current_user, require_role
-from datetime import datetime
+from datetime import datetime, timezone
 
 from utils import generate_display_id
 
@@ -36,7 +36,12 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
 @router.post("/dispense")
 async def dispense_medicine(prescription_id: str, current_user: dict = Depends(require_role([UserRole.PHARMA]))):
     """Pharma dispenses medicine based on a Doctor's prescription."""
-    prescription = await records_collection.find_one({"_id": ObjectId(prescription_id)})
+    try:
+        rx_oid = ObjectId(prescription_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid prescription ID format")
+
+    prescription = await records_collection.find_one({"_id": rx_oid})
     if not prescription:
          raise HTTPException(status_code=404, detail="Prescription not found")
      
@@ -55,7 +60,7 @@ async def dispense_medicine(prescription_id: str, current_user: dict = Depends(r
         "amount_due": 150.00,
         "status": "UNPAID",
         "display_id": generate_display_id("INV"),
-        "date_issued": datetime.utcnow().isoformat()
+        "date_issued": datetime.now(timezone.utc).isoformat()
     }
     
     # Decrement stock
@@ -66,7 +71,7 @@ async def dispense_medicine(prescription_id: str, current_user: dict = Depends(r
     )
 
     await invoices_collection.insert_one(invoice)
-    await records_collection.update_one({"_id": ObjectId(prescription_id)}, {"$set": {"status": "FULFILLED"}})
+    await records_collection.update_one({"_id": rx_oid}, {"$set": {"status": "FULFILLED"}})
     
     return {"message": "Medicine dispensed", "display_id": invoice["display_id"]}
 
@@ -89,6 +94,6 @@ async def add_inventory(medicine: MedicineCreate, current_user: dict = Depends(r
     item = medicine.dict()
     item["hospital_id"] = ObjectId(current_user["hospital_id"])
     item["display_id"] = generate_display_id("MED")
-    item["last_updated"] = datetime.utcnow().isoformat()
-    new_item = await inventory_collection.insert_one(item)
+    item["last_updated"] = datetime.now(timezone.utc).isoformat()
+    await inventory_collection.insert_one(item)
     return {"message": "Inventory successfully updated.", "display_id": item["display_id"]}

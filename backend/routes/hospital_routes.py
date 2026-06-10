@@ -26,8 +26,13 @@ async def get_my_hospital(current_user: dict = Depends(get_current_user)):
     hosp_id_str = current_user.get("hospital_id")
     if not hosp_id_str:
         raise HTTPException(status_code=404, detail="No hospital affiliation found for this user.")
-        
-    hosp = await hospitals_collection.find_one({"_id": ObjectId(hosp_id_str)})
+
+    try:
+        hosp_oid = ObjectId(hosp_id_str)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid hospital ID format")
+
+    hosp = await hospitals_collection.find_one({"_id": hosp_oid})
     if not hosp:
         raise HTTPException(status_code=404, detail="Hospital data not found.")
         
@@ -101,8 +106,13 @@ async def update_departments(
     if not isinstance(departments, list):
         raise HTTPException(status_code=422, detail="departments must be a list of strings.")
 
+    try:
+        hosp_oid = ObjectId(hospital_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid hospital ID format")
+
     await hospitals_collection.update_one(
-        {"_id": ObjectId(hospital_id)},
+        {"_id": hosp_oid},
         {"$set": {"departments": departments}}
     )
     return {"message": "OPD departments updated successfully", "departments": departments}

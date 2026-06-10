@@ -39,7 +39,7 @@ async def register(user: UserCreate):
         try:
             user_dict["hospital_id"] = ObjectId(user_dict["hospital_id"])
         except Exception:
-            pass # Keep as string if not a valid ObjectId
+            raise HTTPException(status_code=400, detail="Invalid hospital_id format")
             
     new_user = await users_collection.insert_one(user_dict)
     created_user = await users_collection.find_one({"_id": new_user.inserted_id})

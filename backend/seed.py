@@ -15,6 +15,10 @@ users_collection = database.get_collection("users")
 inventory_collection = database.get_collection("inventory")
 
 async def seed_database():
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        print("ERROR: Seed script must not run in production. Set ENVIRONMENT=development to override.")
+        return
+
     print("Clearing existing data...")
     await users_collection.delete_many({})
     await hospitals_collection.delete_many({})
@@ -167,9 +171,9 @@ async def seed_database():
     ]
     await inventory_collection.insert_many(medicines)
 
-    print("\nDatabase re-seeded with enhanced fields!")
+    print("\nDatabase re-seeded successfully!")
     print("------------------------------------------")
-    print("Test Accounts (all password: password123):")
+    print("Test Accounts (see .env.example for credentials):")
     print("  SuperAdmin : superadmin@medical.com")
     print("  Local Admin: admin@hospital.com (General City Hospital)")
     print("  Doctor     : doctor@hospital.com (Cardiology)")
