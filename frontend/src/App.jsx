@@ -8,24 +8,65 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import PharmaDashboard from './pages/PharmaDashboard';
 import LabDashboard from './pages/LabDashboard';
 
+import ProtectedRoute from './components/ProtectedRoute';
+import ToastContainer from './components/ToastContainer';
+
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        {/* Protected Routes */}
-        <Route path="/admin/*" element={<AdminDashboard />} />
-        <Route path="/patient/*" element={<PatientDashboard />} />
-        <Route path="/doctor/*" element={<DoctorDashboard />} />
-        <Route path="/pharma/*" element={<PharmaDashboard />} />
-        <Route path="/lab/*" element={<LabDashboard />} />
-        
-        {/* Default route */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected Routes */}
+          <Route 
+            path="/admin/*" 
+            element={
+              <ProtectedRoute allowedRoles={['SUPERADMIN', 'ADMIN']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/patient/*" 
+            element={
+              <ProtectedRoute allowedRoles={['PATIENT']}>
+                <PatientDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/doctor/*" 
+            element={
+              <ProtectedRoute allowedRoles={['DOCTOR']}>
+                <DoctorDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/pharma/*" 
+            element={
+              <ProtectedRoute allowedRoles={['PHARMA']}>
+                <PharmaDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/lab/*" 
+            element={
+              <ProtectedRoute allowedRoles={['LAB_TECH']}>
+                <LabDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Default route */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+      <ToastContainer />
+    </>
   );
 };
 

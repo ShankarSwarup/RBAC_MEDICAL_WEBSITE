@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from './toast';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
@@ -31,7 +32,7 @@ api.interceptors.response.use(
     } else if (error.response && error.response.status === 403) {
       // Forbidden: Wrong Role
       console.error("Forbidden: You lack permissions for this action.");
-      alert("Access Denied: You do not have permission to view this.");
+      toast.error("Access Denied: You do not have permission to view this.");
     }
     return Promise.reject(error);
   }

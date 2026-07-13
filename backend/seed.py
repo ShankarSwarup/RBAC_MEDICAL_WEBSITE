@@ -1,10 +1,14 @@
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
-from passlib.context import CryptContext
 import os
+from pathlib import Path
+
+import bcrypt
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from utils import generate_display_id
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 MONGO_DETAILS = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGO_DETAILS)
@@ -24,7 +28,10 @@ async def seed_database():
     await hospitals_collection.delete_many({})
     await inventory_collection.delete_many({})
 
-    password_hash = pwd_context.hash("password123")
+    seed_password = os.getenv("SEED_PASSWORD", "password123")
+    password_hash = bcrypt.hashpw(
+        seed_password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
 
     print("Creating hospitals...")
     hospitals_data = [

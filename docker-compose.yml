@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: mongo:6.0
+    container_name: medical_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - medical_network
+
+  backend:
+    build: ./backend
+    container_name: medical_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://db:27017/medical_platform
+      - JWT_SECRET_KEY=9a2b7f3d5e6c1a8b9f0e1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+      - ENVIRONMENT=development
+      - SEED_PASSWORD=password123
+    depends_on:
+      - db
+    networks:
+      - medical_network
+
+  frontend:
+    build: ./frontend
+    container_name: medical_frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+      - PORT=80
+    depends_on:
+      - backend
+    networks:
+      - medical_network
+
+volumes:
+  mongo_data:
+
+networks:
+  medical_network:
+    driver: bridge
